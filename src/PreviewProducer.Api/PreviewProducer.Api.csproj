@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <AssemblyName>PreviewProducer.Api</AssemblyName>
+    <RootNamespace>PreviewProducer.Api</RootNamespace>
+  </PropertyGroup>
+</Project>
+

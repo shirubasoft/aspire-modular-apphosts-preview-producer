@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Title>Aspire Modular AppHosts preview producer contract</Title>
+    <Description>Producer-owned Aspire module contract for the cross-repository preview sample.</Description>
+    <PackageId>Shirubasoft.Aspire.ModularAppHosts.PreviewProducer.Contract</PackageId>
+    <PackageVersion>1.0.0</PackageVersion>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Shirubasoft.Aspire.ModularAppHosts" Version="1.1.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+</Project>
+

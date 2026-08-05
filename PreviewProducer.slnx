@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="src/PreviewProducer.Api/PreviewProducer.Api.csproj" />
+  <Project Path="src/PreviewProducer.ModuleContract/PreviewProducer.ModuleContract.csproj" />
+</Solution>
+
