@@ -20,7 +20,7 @@ jobs:
       NGINX_DIGEST: sha256:5616878291a2eed594aee8db4dade5878cf7edcb475e59193904b198d9b830de
       CONTRACT_SOURCE: https://nuget.pkg.github.com/shirubasoft/index.json
       LIBRARY_REPOSITORY: shirubasoft/aspire-modular-apphosts
-      LIBRARY_COMMIT: fd7944f1a6a743844798b0b2ff6b770ecdd4a3bf
+      LIBRARY_COMMIT: f54233a36d4c2ffbe532533d0b1867faf1b42d89
 
     steps:
       - name: Check out producer on its attached branch
