@@ -1,4 +1,4 @@
-name: Publish preview API image
+name: Publish preview artifacts
 
 on:
   workflow_dispatch:
@@ -13,15 +13,108 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     env:
       IMAGE_REPOSITORY: ghcr.io/shirubasoft/aspire-modular-apphosts-preview-producer/api
+      NGINX_REPOSITORY: docker.io/library/nginx
+      NGINX_DIGEST: sha256:5616878291a2eed594aee8db4dade5878cf7edcb475e59193904b198d9b830de
+      CONTRACT_SOURCE: https://nuget.pkg.github.com/shirubasoft/index.json
+      LIBRARY_REPOSITORY: shirubasoft/aspire-modular-apphosts
+      LIBRARY_COMMIT: fd7944f1a6a743844798b0b2ff6b770ecdd4a3bf
 
     steps:
-      - name: Check out producer
+      - name: Check out producer on its attached branch
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
+          ref: ${{ github.ref_name }}
+          path: producer
+          fetch-depth: 1
           persist-credentials: false
+
+      - name: Check out trusted preview tool implementation
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          repository: ${{ env.LIBRARY_REPOSITORY }}
+          ref: ${{ env.LIBRARY_COMMIT }}
+          path: modular-apphosts
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        with:
+          dotnet-version: 10.0.301
+
+      - name: Pack and install the trusted preview tool
+        shell: bash
+        run: |
+          set -euo pipefail
+          actual_library_commit=$(git -C modular-apphosts rev-parse HEAD)
+          if [[ "$actual_library_commit" != "$LIBRARY_COMMIT" ]]; then
+            echo "Library checkout mismatch: expected $LIBRARY_COMMIT, got $actual_library_commit." >&2
+            exit 1
+          fi
+
+          tool_version="0.0.0-preview.${GITHUB_RUN_ID}.${GITHUB_RUN_ATTEMPT}"
+          tool_feed="$RUNNER_TEMP/tool-feed"
+          tool_path="$RUNNER_TEMP/tool"
+          mkdir -p "$tool_feed" artifacts
+          dotnet restore \
+            modular-apphosts/src/Aspire.Hosting.ModularAppHosts.Tool/Aspire.Hosting.ModularAppHosts.Tool.csproj \
+            --nologo
+          dotnet pack \
+            modular-apphosts/src/Aspire.Hosting.ModularAppHosts.Tool/Aspire.Hosting.ModularAppHosts.Tool.csproj \
+            --configuration Release \
+            --no-restore \
+            --output "$tool_feed" \
+            -p:PackageVersion="$tool_version" \
+            -p:Version="$tool_version" \
+            --nologo
+          dotnet tool install \
+            Shirubasoft.Aspire.ModularAppHosts.Tool \
+            --tool-path "$tool_path" \
+            --version "$tool_version" \
+            --source "$tool_feed"
+          echo "$tool_path" >> "$GITHUB_PATH"
+
+      - name: Pack and publish the computed contract version
+        id: contract
+        shell: bash
+        env:
+          NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          contract_version="2.0.0-preview.${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}"
+          contract_output="$RUNNER_TEMP/contracts"
+          mkdir -p "$contract_output"
+          dotnet restore \
+            producer/src/PreviewProducer.ModuleContract/PreviewProducer.ModuleContract.csproj \
+            --nologo
+          dotnet pack \
+            producer/src/PreviewProducer.ModuleContract/PreviewProducer.ModuleContract.csproj \
+            --configuration Release \
+            --no-restore \
+            --output "$contract_output" \
+            -p:PackageVersion="$contract_version" \
+            -p:Version="$contract_version" \
+            -p:RepositoryCommit="$GITHUB_SHA" \
+            --nologo
+          contract_package="$contract_output/Shirubasoft.Aspire.ModularAppHosts.PreviewProducer.Contract.${contract_version}.nupkg"
+          test -f "$contract_package"
+          dotnet nuget push "$contract_package" \
+            --source "$CONTRACT_SOURCE" \
+            --api-key "$NUGET_AUTH_TOKEN"
+
+          contract_sha256=$(sha256sum "$contract_package" | awk '{print $1}')
+          echo "version=$contract_version" >> "$GITHUB_OUTPUT"
+          echo "package=$contract_package" >> "$GITHUB_OUTPUT"
+          jq -n \
+            --arg packageId "Shirubasoft.Aspire.ModularAppHosts.PreviewProducer.Contract" \
+            --arg version "$contract_version" \
+            --arg source "$CONTRACT_SOURCE" \
+            --arg sha256 "$contract_sha256" \
+            '{packageId: $packageId, version: $version, source: $source, sha256: $sha256}' \
+            > artifacts/preview-producer-contract.json
 
       - name: Sign in to GHCR
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
@@ -37,8 +130,8 @@ jobs:
         id: build
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
-          context: .
-          file: src/PreviewProducer.Api/Dockerfile
+          context: producer
+          file: producer/src/PreviewProducer.Api/Dockerfile
           platforms: linux/amd64
           push: true
           tags: ${{ env.IMAGE_REPOSITORY }}:${{ github.sha }}
@@ -46,9 +139,10 @@ jobs:
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
 
-      - name: Record immutable image identity
+      - name: Produce immutable contract and image-only requests
         shell: bash
         env:
+          CONTRACT_VERSION: ${{ steps.contract.outputs.version }}
           IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
         run: |
           set -euo pipefail
@@ -57,7 +151,29 @@ jobs:
             exit 1
           fi
 
-          mkdir -p artifacts
+          common_images=(
+            --image "preview-producer-api=${IMAGE_REPOSITORY}@${IMAGE_DIGEST}"
+            --image "preview-producer-sidecar=${NGINX_REPOSITORY}@${NGINX_DIGEST}"
+          )
+          dotnet modular-apphosts preview produce \
+            --descriptor module-preview.producer.json \
+            --contract-version "$CONTRACT_VERSION" \
+            --output "$RUNNER_TEMP/module-preview.published-contract.json" \
+            --working-directory producer \
+            "${common_images[@]}"
+          dotnet modular-apphosts preview produce \
+            --descriptor module-preview.image-only.producer.json \
+            --output "$RUNNER_TEMP/module-preview.image-only.json" \
+            --working-directory producer \
+            "${common_images[@]}"
+
+          cp "$RUNNER_TEMP/module-preview.published-contract.json" artifacts/
+          cp "$RUNNER_TEMP/module-preview.image-only.json" artifacts/
+          jq -e --arg version "$CONTRACT_VERSION" \
+            '.contracts | length == 1 and .[0].version == $version' \
+            artifacts/module-preview.published-contract.json > /dev/null
+          jq -e '.contracts | length == 0' \
+            artifacts/module-preview.image-only.json > /dev/null
           jq -n \
             --arg resource "preview-producer-api" \
             --arg repository "$IMAGE_REPOSITORY" \
@@ -66,13 +182,15 @@ jobs:
             '{resource: $resource, repository: $repository, digest: $digest, commit: $commit}' \
             > artifacts/preview-producer-api-image.json
 
-          echo "### Preview image" >> "$GITHUB_STEP_SUMMARY"
-          printf '`%s@%s`\n' "$IMAGE_REPOSITORY" "$IMAGE_DIGEST" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Preview artifacts" >> "$GITHUB_STEP_SUMMARY"
+          printf -- '- Contract: `%s`\n' "$CONTRACT_VERSION" >> "$GITHUB_STEP_SUMMARY"
+          printf -- '- API: `%s@%s`\n' "$IMAGE_REPOSITORY" "$IMAGE_DIGEST" >> "$GITHUB_STEP_SUMMARY"
+          printf -- '- Requests: published contract and image-only\n' >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload image provenance
+      - name: Upload preview artifacts and provenance
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: preview-producer-api-${{ github.sha }}
-          path: artifacts/preview-producer-api-image.json
+          name: preview-producer-${{ github.sha }}
+          path: artifacts/
           if-no-files-found: error
           retention-days: 7

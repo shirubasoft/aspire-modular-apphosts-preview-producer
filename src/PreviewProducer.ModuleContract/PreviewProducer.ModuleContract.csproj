@@ -5,6 +5,9 @@
     <PackageId>Shirubasoft.Aspire.ModularAppHosts.PreviewProducer.Contract</PackageId>
     <PackageVersion>2.0.0-preview.1</PackageVersion>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>aspire;apphost;module;preview</PackageTags>
+    <RepositoryUrl>https://github.com/shirubasoft/aspire-modular-apphosts-preview-producer.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
     <IsPackable>true</IsPackable>
     <ModularAppHostsVersion Condition="'$(ModularAppHostsVersion)' == ''">1.1.0</ModularAppHostsVersion>
   </PropertyGroup>
