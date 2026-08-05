@@ -6,9 +6,11 @@
     <PackageVersion>2.0.0-preview.1</PackageVersion>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <IsPackable>true</IsPackable>
+    <ModularAppHostsVersion Condition="'$(ModularAppHostsVersion)' == ''">1.1.0</ModularAppHostsVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Shirubasoft.Aspire.ModularAppHosts" Version="1.1.0" />
+    <PackageReference Include="Shirubasoft.Aspire.ModularAppHosts"
+                      Version="$(ModularAppHostsVersion)" />
   </ItemGroup>
   <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="/" />
