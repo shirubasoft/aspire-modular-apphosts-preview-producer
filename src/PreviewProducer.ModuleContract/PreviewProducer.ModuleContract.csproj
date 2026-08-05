@@ -3,7 +3,7 @@
     <Title>Aspire Modular AppHosts preview producer contract</Title>
     <Description>Producer-owned Aspire module contract for the cross-repository preview sample.</Description>
     <PackageId>Shirubasoft.Aspire.ModularAppHosts.PreviewProducer.Contract</PackageId>
-    <PackageVersion>1.0.0</PackageVersion>
+    <PackageVersion>2.0.0-preview.1</PackageVersion>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <IsPackable>true</IsPackable>
   </PropertyGroup>
@@ -14,4 +14,3 @@
     <None Include="README.md" Pack="true" PackagePath="/" />
   </ItemGroup>
 </Project>
-

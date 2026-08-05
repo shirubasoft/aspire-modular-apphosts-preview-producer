@@ -4,10 +4,10 @@ This public fixture is Repo C in the cross-repository preview sample for [Shirub
 
 ## Projects
 
-- `src/PreviewProducer.Api` serves `baseline-from-main` from `GET /` and exposes `GET /health`.
+- `src/PreviewProducer.Api` serves `preview-from-feature-branch` from `GET /` and exposes `GET /health`.
 - `src/PreviewProducer.ModuleContract` produces `Shirubasoft.Aspire.ModularAppHosts.PreviewProducer.Contract` and references the released `Shirubasoft.Aspire.ModularAppHosts` 1.1.0 package.
 
-The contract declares module `preview-producer` and resource `preview-producer-api`. Its repository-aware factory constructs the API project path from `context.RepositoryPath`, so an importing AppHost can clone and pin this repository independently from the contract assembly.
+The contract declares module `preview-producer`, project resource `preview-producer-api`, and preview-only container resource `preview-producer-sidecar`. Its repository-aware factory constructs the API project path from `context.RepositoryPath`, so an importing AppHost can clone and pin this repository independently from the contract assembly.
 
 ## Build and pack
 
@@ -20,9 +20,8 @@ dotnet pack src/PreviewProducer.ModuleContract/PreviewProducer.ModuleContract.cs
   --configuration Release --no-build --output artifacts
 ```
 
-The feature branch used by the sample changes both the API response and the module resource graph. Its contract must therefore be packed from that branch rather than reusing the baseline package.
+This feature branch changes both the API response and the module resource graph relative to `main`. Its contract must therefore be packed from this branch rather than reusing the baseline package.
 
 ## License
 
 This sample is licensed under the MIT License. See `LICENSE`.
-
