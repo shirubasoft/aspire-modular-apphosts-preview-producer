@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "module": "preview-producer",
+  "contract": {
+    "packageId": "Shirubasoft.Aspire.ModularAppHosts.PreviewProducer.Contract",
+    "version": "2.0.0-preview.1"
+  },
+  "images": [
+    {
+      "resource": "preview-producer-api",
+      "resourceKind": "Container",
+      "repository": "ghcr.io/shirubasoft/aspire-modular-apphosts-preview-producer/api",
+      "required": true
+    },
+    {
+      "resource": "preview-producer-sidecar",
+      "resourceKind": "Container",
+      "repository": "docker.io/library/nginx",
+      "required": true
+    }
+  ]
+}
