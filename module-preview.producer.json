@@ -8,13 +8,13 @@
   "images": [
     {
       "resource": "preview-producer-api",
-      "resourceKind": "Container",
+      "resourceKind": "container",
       "repository": "ghcr.io/shirubasoft/aspire-modular-apphosts-preview-producer/api",
       "required": true
     },
     {
       "resource": "preview-producer-sidecar",
-      "resourceKind": "Container",
+      "resourceKind": "container",
       "repository": "docker.io/library/nginx",
       "required": true
     }

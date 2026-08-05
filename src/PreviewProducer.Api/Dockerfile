@@ -1,11 +1,12 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-COPY PreviewProducer.Api.csproj ./
-RUN dotnet restore PreviewProducer.Api.csproj
+COPY Directory.Build.props global.json ./
+COPY src/PreviewProducer.Api/PreviewProducer.Api.csproj src/PreviewProducer.Api/
+RUN dotnet restore src/PreviewProducer.Api/PreviewProducer.Api.csproj
 
-COPY . ./
-RUN dotnet publish PreviewProducer.Api.csproj \
+COPY src/PreviewProducer.Api/ src/PreviewProducer.Api/
+RUN dotnet publish src/PreviewProducer.Api/PreviewProducer.Api.csproj \
     --configuration Release \
     --no-restore \
     --output /app/publish \
