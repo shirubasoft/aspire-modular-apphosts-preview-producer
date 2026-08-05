@@ -5,7 +5,7 @@ This public fixture is Repo C in the cross-repository preview sample for [Shirub
 ## Projects
 
 - `src/PreviewProducer.Api` serves `preview-from-feature-branch` from `GET /` and exposes `GET /health`.
-- `src/PreviewProducer.ModuleContract` produces `Shirubasoft.Aspire.ModularAppHosts.PreviewProducer.Contract` and references the released `Shirubasoft.Aspire.ModularAppHosts` 1.1.0 package.
+- `src/PreviewProducer.ModuleContract` produces `Shirubasoft.Aspire.ModularAppHosts.PreviewProducer.Contract`. Local builds default to the released `Shirubasoft.Aspire.ModularAppHosts` 1.1.0 package; preview CI compiles against the exact trusted runtime commit and package version also used by the consumer.
 
 The contract declares module `preview-producer` and the container resources
 `preview-producer-api` and `preview-producer-sidecar`.
@@ -19,14 +19,16 @@ before the AppHost imports the module.
 
 The `Publish preview artifacts` workflow does all producer-owned build and publication work once:
 
-1. It packs the contract with the unique CI-computed version
+1. It packs the pinned `aspire-modular-apphosts` commit as
+   `1.2.0-preview.f54233a`, then restores the contract against that exact runtime ABI.
+2. It packs the contract with the unique CI-computed version
    `2.0.0-preview.<run>.<attempt>`, where `<run>` is `GITHUB_RUN_NUMBER` and `<attempt>` is
    `GITHUB_RUN_ATTEMPT`.
-2. It publishes that exact package to GitHub Packages at the credential-free source
+3. It publishes that exact package to GitHub Packages at the credential-free source
    `https://nuget.pkg.github.com/shirubasoft/index.json`.
-3. It builds the API from this repository and pushes the commit-tagged image to GHCR.
-4. It captures the registry-reported API digest and combines it with the pinned nginx digest.
-5. It generates and uploads both preview requests plus package and image provenance.
+4. It builds the API from this repository and pushes the commit-tagged image to GHCR.
+5. It captures the registry-reported API digest and combines it with the pinned nginx digest.
+6. It generates and uploads both preview requests plus package and image provenance.
 
 All actions are pinned to full commits, and the workflow has only `contents: read` and
 `packages: write` permissions. The package source contains no embedded credentials; publication

@@ -21,6 +21,7 @@ jobs:
       CONTRACT_SOURCE: https://nuget.pkg.github.com/shirubasoft/index.json
       LIBRARY_REPOSITORY: shirubasoft/aspire-modular-apphosts
       LIBRARY_COMMIT: f54233a36d4c2ffbe532533d0b1867faf1b42d89
+      LIBRARY_PACKAGE_VERSION: 1.2.0-preview.f54233a
 
     steps:
       - name: Check out producer on its attached branch
@@ -86,9 +87,24 @@ jobs:
           set -euo pipefail
           contract_version="2.0.0-preview.${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}"
           contract_output="$RUNNER_TEMP/contracts"
-          mkdir -p "$contract_output"
+          library_feed="$RUNNER_TEMP/library-feed"
+          mkdir -p "$contract_output" "$library_feed"
+          dotnet restore \
+            modular-apphosts/src/Aspire.Hosting.ModularAppHosts/Aspire.Hosting.ModularAppHosts.csproj \
+            --nologo
+          dotnet pack \
+            modular-apphosts/src/Aspire.Hosting.ModularAppHosts/Aspire.Hosting.ModularAppHosts.csproj \
+            --configuration Release \
+            --no-restore \
+            --output "$library_feed" \
+            -p:PackageVersion="$LIBRARY_PACKAGE_VERSION" \
+            -p:Version="$LIBRARY_PACKAGE_VERSION" \
+            --nologo
           dotnet restore \
             producer/src/PreviewProducer.ModuleContract/PreviewProducer.ModuleContract.csproj \
+            --source "$library_feed" \
+            --source https://api.nuget.org/v3/index.json \
+            -p:ModularAppHostsVersion="$LIBRARY_PACKAGE_VERSION" \
             --nologo
           dotnet pack \
             producer/src/PreviewProducer.ModuleContract/PreviewProducer.ModuleContract.csproj \
@@ -97,6 +113,7 @@ jobs:
             --output "$contract_output" \
             -p:PackageVersion="$contract_version" \
             -p:Version="$contract_version" \
+            -p:ModularAppHostsVersion="$LIBRARY_PACKAGE_VERSION" \
             -p:RepositoryCommit="$GITHUB_SHA" \
             --nologo
           contract_package="$contract_output/Shirubasoft.Aspire.ModularAppHosts.PreviewProducer.Contract.${contract_version}.nupkg"

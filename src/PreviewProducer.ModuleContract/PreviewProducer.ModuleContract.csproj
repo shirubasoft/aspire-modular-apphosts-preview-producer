@@ -13,7 +13,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Shirubasoft.Aspire.ModularAppHosts"
-                      Version="$(ModularAppHostsVersion)" />
+                      Version="[$(ModularAppHostsVersion)]" />
   </ItemGroup>
   <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="/" />
