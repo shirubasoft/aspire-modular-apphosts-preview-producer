@@ -1,5 +1,11 @@
 # Aspire Modular AppHosts preview producer
 
+> [!IMPORTANT]
+> This repository is archived. It was a fixture for the cross-repository module preview sample of
+> `aspire-modular-apphosts`, whose packages continue as the
+> [Multirepo extension](https://github.com/shirubasoft/aspire-extensions/tree/main/extensions/Shirubasoft.Aspire.Extensions.Multirepo)
+> in shirubasoft/aspire-extensions.
+
 This public fixture is Repo C in the cross-repository preview sample for [Shirubasoft.Aspire.ModularAppHosts](https://github.com/Shirubasoft/aspire-modular-apphosts). It owns a minimal HTTP API and the package that describes the API as an Aspire module. The producer builds the API image, while the consumer selects and runs its immutable registry digest without checking out producer source.
 
 ## Projects
